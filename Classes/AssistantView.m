@@ -482,7 +482,7 @@ static UICompositeViewDescription *compositeDescription = nil;
 	/** start of linphone_account_creator_create_proxy_config re-implementation for accounts **/
 	LinphoneAuthInfo *info;
 	LinphoneAccountParams *accountParams = linphone_core_create_account_params(LC);
-	char *identity_str = _get_identity(account_creator);
+	char *identity_str = linphone_account_params_get_identity(account_creator);
 	LinphoneAddress *identity = linphone_address_new(identity_str);
 
 	ms_free(identity_str);
