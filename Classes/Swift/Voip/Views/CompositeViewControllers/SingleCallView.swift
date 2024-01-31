@@ -130,7 +130,7 @@ import AVKit
 	
 	override func viewDidAppear(_ animated: Bool) {
 		super.viewDidAppear(animated)
-		if pipController.isPictureInPictureActive {
+		if (pipController != nil && pipController.isPictureInPictureActive) {
 			pipController.stopPictureInPicture()
 		}
 	}
