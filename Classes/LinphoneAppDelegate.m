@@ -535,6 +535,16 @@
 	LOGI(@"[APNs] %@ : %@", NSStringFromSelector(_cmd), deviceToken);
 	dispatch_async(dispatch_get_main_queue(), ^{
 		linphone_core_did_register_for_remote_push(LC, (__bridge void*)deviceToken);
+        const UIPasteboard* pasteboard = [UIPasteboard generalPasteboard];
+        if (pasteboard) {
+            // Convert it in hex for APNs REST API
+            const unsigned *tokenBytes = [deviceToken bytes];
+            NSMutableString *hexToken = [NSMutableString string];
+            for (NSUInteger byteCount = 0; byteCount * 4 < [deviceToken length]; byteCount++) {
+                [hexToken appendFormat:@"%08x", ntohl(tokenBytes[byteCount])];
+            }
+            pasteboard.string = hexToken;
+        }
 	});
 }
 
