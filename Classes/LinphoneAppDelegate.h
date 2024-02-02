@@ -18,6 +18,7 @@
  */
 
 #import <UIKit/UIKit.h>
+#import <CallKit/CallKit.h>
 
 #import "LinphoneCoreSettingsStore.h"
 #import <UserNotifications/UserNotifications.h>
@@ -25,7 +26,7 @@
 #import <CoreLocation/CoreLocation.h>
 
 
-@interface LinphoneAppDelegate : NSObject <UIApplicationDelegate, UNUserNotificationCenterDelegate, CLLocationManagerDelegate> {
+@interface LinphoneAppDelegate : NSObject <UIApplicationDelegate, UNUserNotificationCenterDelegate, CLLocationManagerDelegate, CXProviderDelegate> {
     @private
 	UIBackgroundTaskIdentifier bgStartId;
     BOOL startedInBackground;
@@ -37,6 +38,7 @@
 @property (nonatomic, strong) UIWindow* window;
 @property BOOL onlyPortrait;
 @property UIApplicationShortcutItem *shortcutItem;
+@property CXProvider* callProvider;
 
 @end
 

@@ -48,6 +48,7 @@
 
 @synthesize configURL;
 @synthesize window;
+@synthesize callProvider;
 
 #pragma mark - Lifecycle Functions
 
@@ -375,7 +376,18 @@
     pushRegistry.delegate = self;
     pushRegistry.desiredPushTypes = [NSSet setWithObject:PKPushTypeVoIP];
     
-	return YES;
+    // Configure the app's CallKit provider object.
+    CXProviderConfiguration* config = [[CXProviderConfiguration alloc] initWithLocalizedName: @"VoIP Service"];
+    config.supportsVideo = true;
+    //config.supportedHandleTypes = [.phoneNumber];
+    config.maximumCallsPerCallGroup = 1;
+
+    // Create the provider and attach the custom delegate object
+    // used by the app to respond to updates.
+    self.callProvider = [[CXProvider alloc] initWithConfiguration: config];
+    [self.callProvider setDelegate:self queue: nil];
+
+    return YES;
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application {
@@ -581,9 +593,39 @@ didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
     });
 }
 
-- (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type
+- (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type withCompletionHandler:(void (^)(void))completionHandler
 {
     NSLog(@"didReceiveIncomingPushWithPayload");
+    if ([type isEqual: @"PKPushTypeVoIP"]) {
+        // Extract the call information from the push notification payload
+        NSString* handle = payload.dictionaryPayload[@"handle"];
+        NSString* uuidString = payload.dictionaryPayload[@"callUUID"];
+        //NSUUID* callUUID = [[NSUUID alloc] initWithUUIDString:uuidString];
+        
+        NSUUID* callUUID = [[NSUUID alloc] initWithUUIDString: @"FDA50693-A4E2-4FB1-AFCF-C6EB07647825"];
+        
+        if (callUUID) {
+            CXCallUpdate* update = [[CXCallUpdate alloc] init];
+            update.remoteHandle = [[CXHandle alloc] initWithType:CXHandleTypeGeneric value:@"Amos Gyamfi"];
+                    
+
+            // Report the call to CallKit, and let it display the call UI.
+            [self.callProvider reportNewIncomingCallWithUUID:callUUID update: update completion:^(NSError* error) {
+                if (error == nil) {
+                    // If the system allows the call to proceed, make a data record for it.
+                    // VoipCall* newCall = [[VoipCall alloc] initWithUUID:callUUID];
+                    // self.callManager.addCall(newCall);
+                }
+                
+                // Tell PushKit that the notification is handled.
+                completionHandler();
+            }];
+            
+            // Asynchronously register with the telephony server and
+            // process the call. Report updates to CallKit as needed.
+            // establishConnection(for: callUUID)
+        }
+    }
 }
 
 - (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error {
