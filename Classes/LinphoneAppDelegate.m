@@ -37,6 +37,8 @@
 
 #import "SVProgressHUD.h"
 
+#import <PushKit/PushKit.h>
+
 
 #ifdef USE_CRASHLYTICS
 #include "FIRApp.h"
@@ -368,6 +370,11 @@
 	[PhoneMainView.instance.mainViewController getCachedController:SingleCallView.compositeViewDescription.name]; // This will create the single instance of the SingleCallView including listeneres
 	[PhoneMainView.instance.mainViewController getCachedController:ConferenceCallView.compositeViewDescription.name]; // This will create the single instance of the ConferenceCallView including listeneres
 	[CallsViewModelBridge setupCallsViewNavigation];
+    
+    PKPushRegistry* pushRegistry = [[PKPushRegistry alloc] initWithQueue:dispatch_get_main_queue()];
+    pushRegistry.delegate = self;
+    pushRegistry.desiredPushTypes = [NSSet setWithObject:PKPushTypeVoIP];
+    
 	return YES;
 }
 
@@ -535,6 +542,20 @@ didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
     LOGI(@"[APNs] %@ : %@", NSStringFromSelector(_cmd), deviceToken);
     dispatch_async(dispatch_get_main_queue(), ^{
         linphone_core_did_register_for_remote_push(LC, (__bridge void*)deviceToken);
+    });
+}
+
+#define PushKit Delegate Methods
+
+- (void)pushRegistry:(PKPushRegistry *)registry didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(NSString *)type{
+    if([credentials.token length] == 0) {
+        NSLog(@"voip token NULL");
+        return;
+    }
+
+    NSLog(@"PushCredentials: %@", credentials.token);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSData* deviceToken = credentials.token;
         const unsigned *tokenBytes = [deviceToken bytes];
         
         NSMutableString *url = [NSMutableString string];
@@ -558,6 +579,11 @@ didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
             }
           }];
     });
+}
+
+- (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type
+{
+    NSLog(@"didReceiveIncomingPushWithPayload");
 }
 
 - (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error {
