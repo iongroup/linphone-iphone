@@ -531,21 +531,33 @@
 #pragma mark - PushNotification Functions
 
 - (void)application:(UIApplication *)application
-	didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
-	LOGI(@"[APNs] %@ : %@", NSStringFromSelector(_cmd), deviceToken);
-	dispatch_async(dispatch_get_main_queue(), ^{
-		linphone_core_did_register_for_remote_push(LC, (__bridge void*)deviceToken);
-        const UIPasteboard* pasteboard = [UIPasteboard generalPasteboard];
-        if (pasteboard) {
-            // Convert it in hex for APNs REST API
-            const unsigned *tokenBytes = [deviceToken bytes];
-            NSMutableString *hexToken = [NSMutableString string];
-            for (NSUInteger byteCount = 0; byteCount * 4 < [deviceToken length]; byteCount++) {
-                [hexToken appendFormat:@"%08x", ntohl(tokenBytes[byteCount])];
-            }
-            pasteboard.string = hexToken;
+didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
+    LOGI(@"[APNs] %@ : %@", NSStringFromSelector(_cmd), deviceToken);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        linphone_core_did_register_for_remote_push(LC, (__bridge void*)deviceToken);
+        const unsigned *tokenBytes = [deviceToken bytes];
+        
+        NSMutableString *url = [NSMutableString string];
+        [url appendString:@"http://localhost:8091/add?user=ios&type=apns&token="];
+        for (NSUInteger byteCount = 0; byteCount * 4 < [deviceToken length]; byteCount++) {
+            [url appendFormat:@"%08x", ntohl(tokenBytes[byteCount])];
         }
-	});
+        
+        NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
+        [request setHTTPMethod:@"GET"];
+        [request setURL:[NSURL URLWithString:url]];
+        
+        NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+        
+        [NSURLConnection sendAsynchronousRequest:request queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+            if (error) {
+                NSLog(@"Error getting %@, HTTP status code %i", url, -1);
+            }
+            else {
+                LOGI(@"[PsuhReg] %@", [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
+            }
+          }];
+    });
 }
 
 - (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error {
