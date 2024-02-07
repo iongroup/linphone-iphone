@@ -571,7 +571,7 @@ didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
         const unsigned *tokenBytes = [deviceToken bytes];
         
         NSMutableString *url = [NSMutableString string];
-        [url appendString:@"http://localhost:8091/add?user=ios&type=apns&token="];
+        [url appendString:@"http://localhost:8091/add?user=ios&topic=com.iontrading.ionweb.linphone&token="];
         for (NSUInteger byteCount = 0; byteCount * 4 < [deviceToken length]; byteCount++) {
             [url appendFormat:@"%08x", ntohl(tokenBytes[byteCount])];
         }
